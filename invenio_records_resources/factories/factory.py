@@ -18,6 +18,7 @@ from invenio_records_permissions import RecordPermissionPolicy
 
 from invenio_records_resources.records.api import Record
 from invenio_records_resources.records.systemfields import IndexField, PIDField
+from invenio_records_resources.records.systemfields.pid import PIDFieldContext
 from invenio_records_resources.resources import RecordResource, \
     RecordResourceConfig
 from invenio_records_resources.services import RecordService, \
@@ -54,11 +55,19 @@ class RecordTypeFactory(object):
         search_options=None,
         service_components=None,
         permission_policy_cls=None,
+        pid_provider_cls=RecordIdProviderV2,
+        pid_create=True,
+        pid_ctx_cls=PIDFieldContext,
     ):
         """Constructor."""
         self.record_type_name = record_type_name
         self.record_name_lower = record_type_name.lower()
         self.name_plural = f"{self.record_name_lower}s"
+
+        # pid field attributes
+        self.pid_provider_cls = pid_provider_cls
+        self.pid_create = pid_create
+        self.pid_ctx_cls = pid_ctx_cls
 
         # record class attributes
         self.schema_version = schema_version
@@ -124,11 +133,18 @@ class RecordTypeFactory(object):
 
     def create_record_class(self):
         """Create record class."""
+        pid_field = PIDField(
+            "id",
+            create=self.pid_create,
+            provider=self.pid_provider_cls,
+            context_cls=self.pid_ctx_cls,
+        )
+
         record_class_attributes = {
             "model_cls": self.model_cls,
             "schema": ConstantField("$schema", self.schema_path),
             "index": IndexField(self.index_name),
-            "pid": PIDField("id", provider=RecordIdProviderV2),
+            "pid": pid_field,
             "dumper": self.record_dumper or ElasticsearchDumper(),
         }
         self.record_cls = type(
