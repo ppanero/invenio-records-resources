@@ -198,8 +198,7 @@ class RecordTypeFactory(object):
         if self.service_components:
             config_cls_attributes.update(
                 {
-                    "components": RecordServiceConfig.components
-                    + self.service_components
+                    "components": self.service_components
                 }
             )
 
